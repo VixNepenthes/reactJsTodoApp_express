@@ -4,17 +4,42 @@ import { env } from '~/config/environment'
 import ms from 'ms'
 import { GET_DB } from '~/config/mongodb'
 import { JwtProvider } from '~/providers/JwtProvider'
+import bcrypt from 'bcryptjs'
 const USER_COLLECTION_NAME = 'users'
+
+async function register(request, response) {
+  try {
+    const salt = await bcrypt.genSalt(10)
+
+    const hashedPassword = await bcrypt.hash(request.body.password, salt)
+    const query = {
+      email: request.body.email,
+      fullname: request.body.fullname,
+      password: hashedPassword
+    }
+
+    const result = await GET_DB().collection(USER_COLLECTION_NAME).insertOne(query)
+    response.status(StatusCodes.CREATED).json({ message: 'Created Success' })
+  } catch (error) {
+    response.status(StatusCodes.INTERNAL_SERVER_ERROR).json(error)
+  }
+}
 
 async function login(request, response) {
   try {
+    const salt = await bcrypt.genSalt(10)
+
     const query = {
-      email: request.body.email,
-      password: request.body.password
+      email: request.body.email
     }
     const result = await GET_DB().collection(USER_COLLECTION_NAME).findOne(query)
     if (!result) {
       response.status(StatusCodes.UNAUTHORIZED).json({ message: 'User not found' })
+      return
+    }
+    const isMatch = await bcrypt.compare(request.body.password, result.password)
+    if (!isMatch) {
+      response.status(StatusCodes.UNAUTHORIZED).json({ message: 'Wrong Password' })
       return
     }
     //Tạo thông tin payload để đính kèm trong token: bao gồm _id và email của user
@@ -104,6 +129,7 @@ async function refreshToken(request, response) {
 }
 
 export const userController = {
+  register,
   login,
   logout,
   refreshToken

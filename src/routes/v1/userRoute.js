@@ -3,6 +3,8 @@ import { userController } from '~/controllers/userController'
 
 const Router = express.Router()
 
+Router.route('/register').post(userController.register)
+
 // API đăng nhập.
 Router.route('/login').post(userController.login)
 
