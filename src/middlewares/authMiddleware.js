@@ -13,7 +13,6 @@ async function isAuthorized(request, response, next) {
       accessTokenFromCookie,
       env.ACCESS_TOKEN_SECRET_SIGNATURE
     )
-    console.log(accessTokenDecoded)
     request.jwtDecoded = accessTokenDecoded
 
     next()

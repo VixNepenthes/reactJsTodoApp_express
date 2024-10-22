@@ -9,17 +9,29 @@ const USER_COLLECTION_NAME = 'users'
 
 async function register(request, response) {
   try {
-    const salt = await bcrypt.genSalt(10)
-
-    const hashedPassword = await bcrypt.hash(request.body.password, salt)
-    const query = {
-      email: request.body.email,
-      fullname: request.body.fullname,
-      password: hashedPassword
+    const queryCheckEmailExisted = {
+      email: request.body.email
     }
 
-    const result = await GET_DB().collection(USER_COLLECTION_NAME).insertOne(query)
-    response.status(StatusCodes.CREATED).json({ message: 'Created Success' })
+    const resultCheckEmailExisted = await GET_DB()
+      .collection(USER_COLLECTION_NAME)
+      .findOne(queryCheckEmailExisted)
+
+    if (!resultCheckEmailExisted) {
+      const salt = await bcrypt.genSalt(10)
+
+      const hashedPassword = await bcrypt.hash(request.body.password, salt)
+      const query = {
+        email: request.body.email,
+        fullname: request.body.fullname,
+        password: hashedPassword
+      }
+
+      const result = await GET_DB().collection(USER_COLLECTION_NAME).insertOne(query)
+      response.status(StatusCodes.CREATED).json({ message: 'Created Success' })
+    } else {
+      response.status(StatusCodes.CONFLICT).json({ message: 'Email already exists' })
+    }
   } catch (error) {
     response.status(StatusCodes.INTERNAL_SERVER_ERROR).json(error)
   }
@@ -27,8 +39,6 @@ async function register(request, response) {
 
 async function login(request, response) {
   try {
-    const salt = await bcrypt.genSalt(10)
-
     const query = {
       email: request.body.email
     }
